@@ -2,6 +2,10 @@ import type {
   StockMetrics,
   TruthAnalysis,
   SearchResult,
+  PricePoint,
+  TerminalLog,
+  TerminalLogLevel,
+  TickerQuick,
 } from "@/types";
 
 export const MOCK_SEARCH_RESULTS: SearchResult[] = [
@@ -499,12 +503,147 @@ const ANALYSIS_DATA: Record<string, TruthAnalysis> = {
   },
 };
 
+function buildPriceHistory(closes: number[]): PricePoint[] {
+  const now = new Date("2025-06-20");
+  return closes.map((price, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - (closes.length - 1 - i) * 3);
+    return {
+      date: d.toISOString().substring(0, 10),
+      price,
+      volume: Math.floor(30_000_000 + Math.random() * 60_000_000),
+    };
+  });
+}
+
+const PRICE_HISTORY_RAW: Record<string, number[]> = {
+  TSLA: [
+    175.2, 182.4, 178.8, 191.3, 187.4, 195.2, 188.9, 201.4, 208.7, 204.2,
+    215.8, 221.3, 218.4, 227.9, 223.5, 234.1, 229.8, 238.4, 244.7, 241.2,
+    252.3, 248.9, 255.4, 251.8, 247.3, 258.4, 253.1, 249.7, 244.2, 247.8,
+  ],
+  NVDA: [
+    75.4, 78.2, 82.7, 79.8, 85.3, 88.9, 92.4, 87.6, 94.2, 97.8,
+    103.5, 101.2, 108.4, 112.7, 109.3, 116.8, 121.4, 118.9, 125.3, 128.7,
+    124.2, 130.8, 127.4, 133.9, 136.2, 132.7, 138.4, 135.1, 131.8, 136.9,
+  ],
+  AAPL: [
+    185.2, 188.7, 191.3, 195.8, 193.4, 198.7, 201.2, 197.8, 204.5, 207.8,
+    203.2, 209.4, 212.7, 208.9, 215.3, 218.4, 214.7, 220.1, 223.5, 219.8,
+    225.4, 221.9, 217.3, 213.8, 216.4, 219.7, 215.2, 211.8, 208.4, 213.5,
+  ],
+  PLTR: [
+    42.1, 44.8, 48.3, 45.7, 51.2, 54.8, 58.3, 55.9, 62.4, 67.8,
+    63.2, 69.4, 72.8, 69.3, 75.4, 79.8, 76.2, 82.4, 85.7, 81.9,
+    87.3, 84.8, 89.2, 86.4, 81.7, 85.3, 88.9, 84.2, 80.7, 87.1,
+  ],
+};
+
+export const TICKER_QUICK_LIST: TickerQuick[] = [
+  { ticker: "NVDA", name: "NVIDIA Corporation", price: 136.94, changePercent: 2.40, fluffScore: 41 },
+  { ticker: "TSLA", name: "Tesla, Inc.", price: 247.82, changePercent: -3.29, fluffScore: 78 },
+  { ticker: "AAPL", name: "Apple Inc.", price: 213.49, changePercent: 0.54, fluffScore: 35 },
+  { ticker: "PLTR", name: "Palantir Technologies", price: 87.14, changePercent: 3.41, fluffScore: 94 },
+];
+
+const AUDIT_LOG_SEQUENCES: Record<string, Array<[TerminalLogLevel, string]>> = {
+  TSLA: [
+    ["INFO", "Initializing TSLA.NQ — Consumer Cyclical / NASDAQ"],
+    ["AUDIT", "Loading fundamental data stream..."],
+    ["INFO", "P/E ratio resolved: 68.4× (sector median: 24.2×)"],
+    ["WARN", "Gross margin below 20% — price war damage detected"],
+    ["SIGNAL", "Insider sell signal: CEO disposed $875M in 30 days"],
+    ["AUDIT", "Running fluff detection against analyst coverage..."],
+    ["WARN", "4 high-severity narrative anomalies flagged"],
+    ["SIGNAL", "YoY revenue growth: +2.1% vs consensus of +18% — DELTA: -15.9pp"],
+    ["AUDIT", "Cross-referencing FSD regulatory filings..."],
+    ["WARN", "FSD approval: 0 of 7 major markets confirmed"],
+    ["INFO", "Energy division (Megapack): genuine growth, insufficient scale"],
+    ["SUCCESS", "Analysis complete. Fluff Score: 78/100 — SPECULATIVE TRAP"],
+  ],
+  NVDA: [
+    ["INFO", "Initializing NVDA.NQ — Technology / NASDAQ"],
+    ["AUDIT", "Loading fundamental data stream..."],
+    ["INFO", "Revenue growth YoY: +122.0% — VERIFIED ORGANIC"],
+    ["INFO", "Gross margin: 75.1% — software-tier in hardware business"],
+    ["AUDIT", "Evaluating competitive moat durability..."],
+    ["WARN", "Customer concentration: top-5 = ~40% of revenue"],
+    ["SIGNAL", "Alert: top-5 customers actively developing competing silicon"],
+    ["AUDIT", "Running CUDA ecosystem defensibility model..."],
+    ["INFO", "CUDA developer base: 4M+ — switching cost is high but finite"],
+    ["WARN", "P/S at 31.4× — assumes uninterrupted dominance through 2030"],
+    ["SIGNAL", "Insider activity: CEO sold $82M on 10b5-1 plan (routine)"],
+    ["SUCCESS", "Analysis complete. Fluff Score: 41/100 — OVERVALUED"],
+  ],
+  AAPL: [
+    ["INFO", "Initializing AAPL.NQ — Technology / NASDAQ"],
+    ["AUDIT", "Loading fundamental data stream..."],
+    ["INFO", "Market cap: $3.21T — pricing implies perpetual quality premium"],
+    ["INFO", "FCF yield: 3.4% — $95B returned to shareholders annually"],
+    ["AUDIT", "Checking Services segment margin expansion..."],
+    ["INFO", "Services gross margin: 73.4% — structural earnings quality uplift"],
+    ["WARN", "China revenue: ~18% — Huawei competition escalating in premium tier"],
+    ["AUDIT", "Running narrative vs reality reconciliation..."],
+    ["INFO", "Apple Intelligence: no measurable upgrade cycle uplift yet detected"],
+    ["SIGNAL", "Revenue growth YoY +4.9% — in-line with expectations, no upside surprise"],
+    ["WARN", "DOJ antitrust case: App Store economics at potential risk"],
+    ["SUCCESS", "Analysis complete. Fluff Score: 35/100 — FAIRLY VALUED"],
+  ],
+  PLTR: [
+    ["INFO", "Initializing PLTR.NY — Technology / NYSE"],
+    ["AUDIT", "Loading fundamental data stream..."],
+    ["ERROR", "P/E ratio: 347.2× — exceeds all validated valuation models"],
+    ["ERROR", "P/S ratio: 62.1× — no precedent at this scale in profitable software"],
+    ["SIGNAL", "CRITICAL: CEO sold $697M in 60 days — 10b5-1 plan active"],
+    ["SIGNAL", "CRITICAL: Peter Thiel sold $1.24B — largest single disposal event"],
+    ["AUDIT", "Running government contract defensibility analysis..."],
+    ["INFO", "DOGE-equivalent budget risk: government contracts under review"],
+    ["WARN", "Operating margin: 13.8% after 20 years of operation"],
+    ["WARN", "AIP platform: not demonstrably differentiated vs enterprise LLM alternatives"],
+    ["ERROR", "Valuation requires 30× earnings growth to justify entry price in 10 years"],
+    ["SUCCESS", "Analysis complete. Fluff Score: 94/100 — HYPE BUBBLE ⚠"],
+  ],
+};
+
+const GENERIC_LOGS: Array<[TerminalLogLevel, string]> = [
+  ["INFO", "Initializing ticker analysis..."],
+  ["AUDIT", "Loading fundamental data stream..."],
+  ["INFO", "Data resolved — running pattern detection"],
+  ["AUDIT", "Cross-referencing analyst consensus with reported figures"],
+  ["WARN", "No detailed analysis available for this ticker in the mock dataset"],
+  ["INFO", "Basic metrics loaded successfully"],
+  ["SUCCESS", "Analysis complete"],
+];
+
+export function getAuditLogSequence(ticker: string): Array<[TerminalLogLevel, string]> {
+  return AUDIT_LOG_SEQUENCES[ticker.toUpperCase()] ?? GENERIC_LOGS;
+}
+
+export function buildTerminalLog(level: TerminalLogLevel, message: string): TerminalLog {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  const s = String(now.getSeconds()).padStart(2, "0");
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    timestamp: `${h}:${m}:${s}.${ms}`,
+    level,
+    message,
+  };
+}
+
 export function getMockStockMetrics(ticker: string): StockMetrics | null {
   return STOCK_DATA[ticker.toUpperCase()] ?? null;
 }
 
 export function getMockAnalysis(ticker: string): TruthAnalysis | null {
   return ANALYSIS_DATA[ticker.toUpperCase()] ?? null;
+}
+
+export function getMockPriceHistory(ticker: string): PricePoint[] | null {
+  const raw = PRICE_HISTORY_RAW[ticker.toUpperCase()];
+  return raw ? buildPriceHistory(raw) : null;
 }
 
 export function searchMockTickers(query: string): SearchResult[] {

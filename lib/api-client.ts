@@ -1,7 +1,8 @@
-import type { StockMetrics, TruthAnalysis, SearchResult } from "@/types";
+import type { StockMetrics, TruthAnalysis, SearchResult, PricePoint } from "@/types";
 import {
   getMockStockMetrics,
   getMockAnalysis,
+  getMockPriceHistory,
   searchMockTickers,
 } from "@/lib/mock-data";
 
@@ -42,6 +43,19 @@ export async function fetchTruthAnalysis(ticker: string): Promise<TruthAnalysis>
     throw new ApiError(
       `No analysis available for ticker "${ticker.toUpperCase()}"`,
       "ANALYSIS_NOT_FOUND",
+      404
+    );
+  }
+  return data;
+}
+
+export async function fetchPriceHistory(ticker: string): Promise<PricePoint[]> {
+  await delay(SIMULATED_DELAY - 100);
+  const data = getMockPriceHistory(ticker);
+  if (!data) {
+    throw new ApiError(
+      `No price history for "${ticker.toUpperCase()}"`,
+      "HISTORY_NOT_FOUND",
       404
     );
   }

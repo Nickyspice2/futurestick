@@ -106,3 +106,32 @@ export interface SearchResult {
 }
 
 export type LoadingState = "idle" | "loading" | "success" | "error";
+
+export interface PricePoint {
+  date: string;
+  price: number;
+  volume: number;
+}
+
+export type TerminalLogLevel =
+  | "INFO"
+  | "WARN"
+  | "SIGNAL"
+  | "AUDIT"
+  | "ERROR"
+  | "SUCCESS";
+
+export interface TerminalLog {
+  id: string;
+  timestamp: string;
+  level: TerminalLogLevel;
+  message: string;
+}
+
+export interface TickerQuick {
+  ticker: string;
+  name: string;
+  price: number;
+  changePercent: number;
+  fluffScore: number;
+}
